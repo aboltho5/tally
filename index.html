@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tally</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Tally">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <button class="icon-btn" id="prev-day" aria-label="Previous day">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <button class="date-btn" id="date-label" aria-label="Jump to today">Today</button>
+  <button class="icon-btn" id="next-day" aria-label="Next day">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+  </button>
+  <button class="icon-btn settings-btn" id="open-settings" aria-label="Settings">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  </button>
+</header>
+
+<main>
+  <section class="label" aria-label="Today's totals">
+    <h1 class="label-title">Nutrition Facts</h1>
+    <p class="label-sub" id="label-sub">Your day so far</p>
+    <div class="rule-heavy"></div>
+    <div class="cal-row">
+      <span class="cal-word">Calories</span>
+      <span class="cal-num" id="cal-num">0</span>
+    </div>
+    <div class="cal-meter" aria-hidden="true"><span id="cal-bar"></span></div>
+    <p class="cal-left" id="cal-left">2,200 left</p>
+    <div class="rule-mid"></div>
+    <p class="dv-head">% Goal</p>
+    <div class="macro" data-m="p"><span class="m-name"><b>Protein</b> <span class="m-amt">0g</span></span><span class="m-pct">0%</span><div class="m-bar"><span></span></div></div>
+    <div class="macro" data-m="c"><span class="m-name"><b>Total Carbohydrate</b> <span class="m-amt">0g</span></span><span class="m-pct">0%</span><div class="m-bar"><span></span></div></div>
+    <div class="macro" data-m="f"><span class="m-name"><b>Total Fat</b> <span class="m-amt">0g</span></span><span class="m-pct">0%</span><div class="m-bar"><span></span></div></div>
+    <div class="rule-heavy thin-bottom"></div>
+  </section>
+
+  <section id="meals" aria-label="Meals"></section>
+</main>
+
+<nav class="dock">
+  <button class="dock-btn secondary" id="open-search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+    Search food
+  </button>
+  <button class="dock-btn primary" id="open-scan">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 8v8M10 8v8M13 8v8M16 8v8"/></svg>
+    Scan barcode
+  </button>
+</nav>
+
+<!-- Scanner -->
+<div class="scanner" id="scanner" hidden>
+  <div id="reader"></div>
+  <div class="scan-ui">
+    <p class="scan-hint" id="scan-hint">Line the barcode up inside the box</p>
+    <form class="scan-manual" id="scan-manual">
+      <input inputmode="numeric" pattern="[0-9]*" placeholder="Or type the barcode number" id="scan-manual-input" aria-label="Barcode number">
+      <button type="submit">Look up</button>
+    </form>
+    <button class="scan-close" id="scan-close">Cancel</button>
+  </div>
+</div>
+
+<!-- Search -->
+<dialog class="sheet tall" id="search-sheet">
+  <div class="sheet-head">
+    <form id="search-form" class="search-form" role="search">
+      <input type="search" id="search-input" placeholder="Search foods, e.g. banana, Chobani" autocomplete="off" enterkeyhint="search" aria-label="Search foods">
+    </form>
+    <button class="text-btn" data-close>Done</button>
+  </div>
+  <div class="search-actions">
+    <button class="chip" id="open-custom">Enter manually</button>
+    <button class="chip" id="open-quick">Quick add calories</button>
+  </div>
+  <div id="search-results" class="results"></div>
+</dialog>
+
+<!-- Amount / log entry -->
+<dialog class="sheet" id="food-sheet">
+  <form method="dialog" id="food-form">
+    <div class="sheet-head">
+      <div class="food-title">
+        <h2 id="food-name">Food</h2>
+        <p id="food-brand"></p>
+      </div>
+      <button class="text-btn" value="cancel" formnovalidate>Cancel</button>
+    </div>
+    <div class="amount-row">
+      <label class="field grow">Amount
+        <input type="number" inputmode="decimal" step="any" min="0" id="food-qty" required>
+      </label>
+      <label class="field grow">Unit
+        <select id="food-unit"></select>
+      </label>
+    </div>
+    <label class="field">Meal
+      <select id="food-meal">
+        <option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snacks</option>
+      </select>
+    </label>
+    <div class="preview" id="food-preview"></div>
+    <p class="source-note" id="food-source"></p>
+    <div class="sheet-actions">
+      <button type="button" class="btn danger" id="food-delete" hidden>Delete</button>
+      <button type="submit" class="btn primary" id="food-submit" value="save">Add to log</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Custom food -->
+<dialog class="sheet tall" id="custom-sheet">
+  <form method="dialog" id="custom-form">
+    <div class="sheet-head">
+      <h2 id="custom-title">Enter manually</h2>
+      <button class="text-btn" value="cancel" formnovalidate>Cancel</button>
+    </div>
+    <p class="sheet-note" id="custom-note">Copy the numbers off the package label.</p>
+    <label class="field">Name<input id="c-name" required autocomplete="off"></label>
+    <label class="field">Brand (optional)<input id="c-brand" autocomplete="off"></label>
+    <div class="amount-row">
+      <label class="field grow">Serving size<input id="c-serving" placeholder="1 bar" autocomplete="off"></label>
+      <label class="field grow">Grams per serving<input id="c-grams" type="number" inputmode="decimal" step="any" min="0" placeholder="optional"></label>
+    </div>
+    <p class="sheet-note">Per serving</p>
+    <div class="grid4">
+      <label class="field">Calories<input id="c-kcal" type="number" inputmode="decimal" step="any" min="0" required></label>
+      <label class="field">Protein g<input id="c-p" type="number" inputmode="decimal" step="any" min="0"></label>
+      <label class="field">Carbs g<input id="c-c" type="number" inputmode="decimal" step="any" min="0"></label>
+      <label class="field">Fat g<input id="c-f" type="number" inputmode="decimal" step="any" min="0"></label>
+    </div>
+    <input type="hidden" id="c-barcode">
+    <label class="check"><input type="checkbox" id="c-save" checked> Save to My Foods so I can find it again</label>
+    <div class="sheet-actions">
+      <button type="submit" class="btn primary" value="save">Continue</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Settings -->
+<dialog class="sheet tall" id="settings-sheet">
+  <form method="dialog" id="settings-form">
+    <div class="sheet-head">
+      <h2>Settings</h2>
+      <button class="text-btn" value="save">Done</button>
+    </div>
+    <h3>Daily goals</h3>
+    <div class="grid4">
+      <label class="field">Calories<input id="g-kcal" type="number" inputmode="numeric" min="0"></label>
+      <label class="field">Protein g<input id="g-p" type="number" inputmode="numeric" min="0"></label>
+      <label class="field">Carbs g<input id="g-c" type="number" inputmode="numeric" min="0"></label>
+      <label class="field">Fat g<input id="g-f" type="number" inputmode="numeric" min="0"></label>
+    </div>
+    <h3>USDA database key</h3>
+    <p class="sheet-note">Search works without one, but the shared demo key runs out fast. A free personal key takes a minute: <a href="https://fdc.nal.usda.gov/api-key-signup" target="_blank" rel="noopener">sign up at USDA FoodData Central</a>.</p>
+    <label class="field">API key<input id="s-key" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Using shared demo key"></label>
+    <h3>Your data</h3>
+    <p class="sheet-note">Everything is stored on this phone only. Export a backup now and then.</p>
+    <div class="sheet-actions left">
+      <button type="button" class="btn" id="export-btn">Export backup</button>
+      <label class="btn">Import backup<input type="file" accept="application/json,.json" id="import-input" hidden></label>
+    </div>
+    <div class="sheet-actions left">
+      <button type="button" class="btn danger" id="wipe-btn">Delete all data</button>
+    </div>
+    <p class="credit">Food data from <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a> (ODbL) and <a href="https://fdc.nal.usda.gov" target="_blank" rel="noopener">USDA FoodData Central</a>.</p>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+<script src="app.js" defer></script>
+</body>
+</html>
