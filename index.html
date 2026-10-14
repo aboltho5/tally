@@ -8,12 +8,13 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Tally">
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f2f2ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161614" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -51,6 +52,17 @@
     <div class="rule-heavy thin-bottom"></div>
   </section>
 
+  <section class="weight-block" aria-label="Weight">
+    <div class="meal-head"><h2>Weight</h2><span id="wcard-sub"></span></div>
+    <button class="weight-card" id="open-weight">
+      <span class="wc-text">
+        <b id="wcard-value">Log weight</b>
+        <span id="wcard-meta">Tap to add today's weigh-in</span>
+      </span>
+      <span class="wc-spark" id="wcard-spark" aria-hidden="true"></span>
+    </button>
+  </section>
+
   <section id="meals" aria-label="Meals"></section>
 </main>
 
@@ -66,20 +78,30 @@
 </nav>
 
 <!-- Scanner -->
-<div class="scanner" id="scanner" hidden>
-  <div id="reader"></div>
+<dialog class="scanner" id="scanner" aria-label="Barcode scanner">
+  <div class="scan-view" id="scan-view">
+    <video id="scan-video" playsinline muted autoplay></video>
+    <div class="scan-frame" id="scan-frame"><span class="scan-line"></span></div>
+    <div class="scan-tools">
+      <button type="button" class="scan-tool" id="scan-zoom" hidden>2×</button>
+      <button type="button" class="scan-tool" id="scan-torch" hidden aria-label="Flashlight">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>
+      </button>
+    </div>
+  </div>
   <div class="scan-ui">
-    <p class="scan-hint" id="scan-hint">Line the barcode up inside the box</p>
+    <p class="scan-hint" id="scan-hint">Hold the barcode inside the box, about 6 inches away</p>
     <form class="scan-manual" id="scan-manual">
       <input inputmode="numeric" pattern="[0-9]*" placeholder="Or type the barcode number" id="scan-manual-input" aria-label="Barcode number">
       <button type="submit">Look up</button>
     </form>
-    <button class="scan-close" id="scan-close">Cancel</button>
+    <button type="button" class="scan-close" id="scan-close" autofocus>Cancel</button>
   </div>
-</div>
+</dialog>
 
 <!-- Search -->
 <dialog class="sheet tall" id="search-sheet">
+  <p class="pick-note" id="search-context" hidden>Adding an ingredient to your recipe</p>
   <div class="sheet-head">
     <form id="search-form" class="search-form" role="search">
       <input type="search" id="search-input" placeholder="Search foods, e.g. banana, Chobani" autocomplete="off" enterkeyhint="search" aria-label="Search foods">
@@ -87,8 +109,10 @@
     <button class="text-btn" data-close>Done</button>
   </div>
   <div class="search-actions">
+    <button class="chip" id="search-scan">Scan barcode</button>
     <button class="chip" id="open-custom">Enter manually</button>
     <button class="chip" id="open-quick">Quick add calories</button>
+    <button class="chip" id="open-new-recipe">New recipe</button>
   </div>
   <div id="search-results" class="results"></div>
 </dialog>
@@ -111,18 +135,78 @@
         <select id="food-unit"></select>
       </label>
     </div>
-    <label class="field">Meal
+    <label class="field" id="food-meal-field">Meal
       <select id="food-meal">
         <option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snacks</option>
       </select>
     </label>
     <div class="preview" id="food-preview"></div>
     <p class="source-note" id="food-source"></p>
+    <p class="ing-summary" id="food-ings" hidden></p>
+    <label class="check" id="food-split-wrap" hidden><input type="checkbox" id="food-split"> Log each ingredient separately, so I can tweak one</label>
     <div class="sheet-actions">
       <button type="button" class="btn danger" id="food-delete" hidden>Delete</button>
+      <button type="button" class="btn" id="food-edit-recipe" hidden>Edit recipe</button>
       <button type="submit" class="btn primary" id="food-submit" value="save">Add to log</button>
     </div>
   </form>
+</dialog>
+
+<!-- Recipe builder -->
+<dialog class="sheet tall" id="recipe-sheet" data-keep-open>
+  <form method="dialog" id="recipe-form">
+    <div class="sheet-head">
+      <h2 id="recipe-title">New recipe</h2>
+      <button class="text-btn" value="cancel" formnovalidate>Cancel</button>
+    </div>
+    <label class="field">Name<input id="r-name" required autocomplete="off" placeholder="e.g. Usual breakfast"></label>
+    <label class="field">Servings it makes
+      <input id="r-servings" type="number" inputmode="decimal" step="any" min="0.1" value="1" required>
+    </label>
+    <p class="sheet-note">Leave at 1 for a meal you eat all at once. For a batch, like a pot of chili, enter how many portions it makes.</p>
+    <h3>Ingredients</h3>
+    <div class="ing-list" id="r-list"></div>
+    <div class="search-actions">
+      <button type="button" class="chip strong" id="r-add-search">Search to add</button>
+      <button type="button" class="chip strong" id="r-add-scan">Scan to add</button>
+    </div>
+    <div class="recipe-total">
+      <p class="sheet-note" id="r-per">Per serving</p>
+      <div class="preview" id="r-preview"></div>
+    </div>
+    <div class="sheet-actions">
+      <button type="button" class="btn danger" id="r-delete" hidden>Delete recipe</button>
+      <button type="submit" class="btn primary" value="save">Save recipe</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Weight -->
+<dialog class="sheet tall" id="weight-sheet">
+  <div class="sheet-head">
+    <h2>Weight</h2>
+    <button class="text-btn" data-close>Done</button>
+  </div>
+  <form class="weigh-form" id="weigh-form">
+    <label class="field grow">Date<input type="date" id="w-date" required></label>
+    <label class="field grow"><span>Weight, <span class="w-unit">lb</span></span><input type="number" inputmode="decimal" step="any" min="0" id="w-value" required></label>
+    <button type="submit" class="btn primary" id="w-save">Save</button>
+  </form>
+  <button type="button" class="link-btn danger-text" id="w-delete" hidden>Delete this weigh-in</button>
+
+  <div class="seg" role="tablist" aria-label="Chart range" id="w-range">
+    <button role="tab" data-days="30">1M</button>
+    <button role="tab" data-days="90" aria-selected="true">3M</button>
+    <button role="tab" data-days="182">6M</button>
+    <button role="tab" data-days="365">1Y</button>
+    <button role="tab" data-days="0">All</button>
+  </div>
+  <p class="w-readout" id="w-readout"></p>
+  <div class="w-chart" id="w-chart"></div>
+  <p class="w-legend" id="w-legend"><span class="lg-dot"></span>Weigh-ins <span class="lg-line"></span>7-day average</p>
+  <div class="w-stats" id="w-stats"></div>
+  <h3>History</h3>
+  <div class="w-history" id="w-history"></div>
 </dialog>
 
 <!-- Custom food -->
@@ -168,6 +252,10 @@
       <label class="field">Carbs g<input id="g-c" type="number" inputmode="numeric" min="0"></label>
       <label class="field">Fat g<input id="g-f" type="number" inputmode="numeric" min="0"></label>
     </div>
+    <h3>Weight</h3>
+    <label class="field">Units
+      <select id="s-unit"><option value="lb">Pounds (lb)</option><option value="kg">Kilograms (kg)</option></select>
+    </label>
     <h3>USDA database key</h3>
     <p class="sheet-note">Search works without one, but the shared demo key runs out fast. A free personal key takes a minute: <a href="https://fdc.nal.usda.gov/api-key-signup" target="_blank" rel="noopener">sign up at USDA FoodData Central</a>.</p>
     <label class="field">API key<input id="s-key" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Using shared demo key"></label>
@@ -180,13 +268,13 @@
     <div class="sheet-actions left">
       <button type="button" class="btn danger" id="wipe-btn">Delete all data</button>
     </div>
-    <p class="credit">Food data from <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a> (ODbL) and <a href="https://fdc.nal.usda.gov" target="_blank" rel="noopener">USDA FoodData Central</a>.</p>
+    <p class="credit">Food data from <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a> (ODbL) and <a href="https://fdc.nal.usda.gov" target="_blank" rel="noopener">USDA FoodData Central</a>. Barcode reading by <a href="https://github.com/zxing-cpp/zxing-cpp" target="_blank" rel="noopener">ZXing-C++</a>.</p>
   </form>
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/barcode-detector@3.0.7/dist/iife/ponyfill.js" defer></script>
 <script src="app.js" defer></script>
 </body>
 </html>

@@ -1,8 +1,8 @@
 // Caches the app itself so it opens instantly and works offline.
 // Food database requests always go to the network.
-const VERSION = "tally-v1";
+const VERSION = "tally-v2";
 const SHELL = ["./", "index.html", "styles.css", "app.js", "manifest.json", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"];
-const CDN = ["https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"];
+const CDN = ["https://cdn.jsdelivr.net/npm/barcode-detector@3.0.7/dist/iife/ponyfill.js"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
@@ -24,7 +24,8 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET") return;
   const sameOrigin = url.origin === self.location.origin;
-  const cacheable = sameOrigin || CDN.includes(url.href) || url.host.endsWith("fonts.googleapis.com") || url.host.endsWith("fonts.gstatic.com");
+  // versioned CDN files (scanner script + its WebAssembly decoder) never change, so cache them for good
+  const cacheable = sameOrigin || url.host.endsWith("jsdelivr.net") || url.host.endsWith("fonts.googleapis.com") || url.host.endsWith("fonts.gstatic.com");
   if (!cacheable) return; // API calls: straight to network
 
   if (sameOrigin) {
